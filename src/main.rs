@@ -1,4 +1,5 @@
 extern crate ftp;
+extern crate getopts;
 
 use std::env;
 use std::fs::{self, File};
@@ -6,34 +7,63 @@ use std::fs::{self, File};
 use ftp::FtpStream;
 use ftp::types::FileType;
 
+use getopts::Options;
+
+macro_rules! required {
+    ($opt:expr) => (
+        if let Some(x) = $opt{
+            x
+        }else{
+            println!("A required arguement was missing!");
+            incorrect_syntax();
+            return
+        }
+    );
+}
+
+fn incorrect_syntax(){
+    println!("Incorrect syntax.\nTry -h for help");
+}
+
 fn main() {
     let args: Vec<_> = env::args().skip(1).collect();
 
-    println!("Move to FTP v.0.1 © 2016 LFalch.com");
-    println!("=================");
+    println!("Move to FTP v{} © 2016 LFalch.com\n", env!("CARGO_PKG_VERSION"));
 
-    if args.len() != 6 {
-        println!("Usage: move-to-ftp.exe <local path> <ftpserver> <port> <remote path> <username> <password>.");
-        println!(" ");
-        println!("Example: move-to-ftp.exe c:\\Temp\\* ftp.example.com 21 /upload/ joe secret");
-        println!(" ");
-        println!("Files from local path will be recursively uploaded to FTP-server in remote path and then deleted locally");
+    let mut opts = Options::new();
+    opts.optopt("f", "from", "set the path to the local folder where the files will be moved from (default is current working directory)", "PATH");
+    opts.optopt("s", "server", "set the hostname of the FTP-server (required)", "HOST");
+    opts.optopt("p", "port", "set the port on the FTP-server (default: 21)", "PORT");
+    opts.optopt("t", "to", "set the remote path on the FTP-server where the files will be moved to", "PATH");
+    opts.optopt("P", "password", "set the password of the user on the FTP-server to login with (required)", "PASSWORD");
+    opts.optopt("u", "username", "set the username of the user on the FTP-server to login with (required)", "USERNAME");
+    opts.optflag("h", "help", "prints this help");
+
+    let matches = match opts.parse(&args){
+        Ok(m) => m,
+        Err(_) => return incorrect_syntax()
+    };
+
+    if matches.opt_present("h") {
+        println!("{}", opts.usage(""));
         return
     }
 
-    let local_path = fs::read_dir(&*args[0]).unwrap();
-    let hostname = &*args[1];
-    let port_number: u16 = args[2].parse().unwrap();
-    let remote_path = &*args[3];
-    let username = &*args[4];
-    let password = &*args[5];
+    let local_path = fs::read_dir(matches.opt_str("f").unwrap_or_else(|| ".".to_owned())).unwrap();
+    let hostname = required!(matches.opt_str("s"));
+    let port_number: u16 = matches.opt_str("p").map(|p| p.parse().unwrap()).unwrap_or(21);
+    let remote_path = matches.opt_str("t");
+    let username = required!(matches.opt_str("u"));
+    let password = required!(matches.opt_str("P"));
 
     println!("Connecting..");
 
-    let mut ftp_stream = FtpStream::connect((hostname, port_number)).unwrap();
-    ftp_stream.login(username, password).unwrap();
+    let mut ftp_stream = FtpStream::connect((&*hostname, port_number)).unwrap();
+    ftp_stream.login(&username, &password).unwrap();
     ftp_stream.transfer_type(FileType::Binary).unwrap();
-    ftp_stream.cwd(remote_path).unwrap();
+    if let Some(ref p) = remote_path{
+        ftp_stream.cwd(p).unwrap();
+    }
 
     put_files(&mut ftp_stream, local_path, "./".to_owned());
 

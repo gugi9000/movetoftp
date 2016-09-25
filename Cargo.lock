@@ -1,8 +1,9 @@
 [root]
 name = "move-to-ftp"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "ftp 2.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "getopts 0.2.14 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -31,6 +32,11 @@ dependencies = [
  "lazy_static 0.1.16 (registry+https://github.com/rust-lang/crates.io-index)",
  "regex 0.1.77 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
+
+[[package]]
+name = "getopts"
+version = "0.2.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "kernel32-sys"
