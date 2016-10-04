@@ -16,8 +16,7 @@ macro_rules! required {
             x
         }else{
             println!("A required arguement was missing!");
-            incorrect_syntax();
-            return
+            return incorrect_syntax()
         }
     );
 }
@@ -25,7 +24,6 @@ macro_rules! required {
 fn incorrect_syntax(){
     println!("Incorrect syntax.\nTry -h for help");
 }
-
 fn main() {
     let args: Vec<_> = env::args().skip(1).collect();
 
@@ -61,8 +59,14 @@ fn main() {
 
     println!("Connecting..");
 
-    let mut ftp_stream = FtpStream::connect((&*hostname, port_number)).unwrap();
-    ftp_stream.login(&username, &password).unwrap();
+    let mut ftp_stream = match FtpStream::connect((&*hostname, port_number)){
+        Ok(s) => s,
+        Err(e) => return println!("Failed to connect to host:\n\t{}", e)
+    };
+    match ftp_stream.login(&username, &password){
+        Ok(()) => (),
+        Err(e) => return println!("Failed to login:\n\t{}", e);
+    };
     ftp_stream.transfer_type(FileType::Binary).unwrap();
     if let Some(ref p) = remote_path{
         ftp_stream.cwd(p).unwrap();
@@ -93,8 +97,10 @@ fn put_files<P: AsRef<Path>>(stream: &mut FtpStream, dir: P, folder: String, del
 
                 match stream.put(remote_file, &mut File::open(file).unwrap()){
                     Ok(()) => {
-                        println!("\tSuccess, deleting local file");
-                        fs::remove_file(entry.path()).unwrap();
+                        match fs::remove_file(entry.path()){
+                            Ok(()) => println!("\tSuccess deleting local file"),
+                            Err(e) => println!("\tFailed deleting file: {:?}", e)
+                        }
                     },
                     Err(e) => {
                         println!("\tError happened: {}", e);
