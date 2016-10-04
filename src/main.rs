@@ -65,7 +65,7 @@ fn main() {
     };
     match ftp_stream.login(&username, &password){
         Ok(()) => (),
-        Err(e) => return println!("Failed to login:\n\t{}", e);
+        Err(e) => return println!("Failed to login:\n\t{}", e)
     };
     ftp_stream.transfer_type(FileType::Binary).unwrap();
     if let Some(ref p) = remote_path{
