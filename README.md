@@ -7,8 +7,6 @@ A tool to upload local files to FTP and **delete them**, locally. Hence move to 
 
 `move-to-ftp.exe -f C:\Temp\foo\ -s ftp.example.com -p 21 -t /pub/dropbox/ -u joe -P mySecret -d`
 
-**When using -d, the folder foo in C:\Temp will end up empty and therefore deleted !**
-
 ### Options:
     -f, --from PATH     set the path to the local folder where the files will
                         be moved from (default is current working directory)
