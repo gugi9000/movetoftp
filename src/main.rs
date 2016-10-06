@@ -111,7 +111,7 @@ fn put_files<P: AsRef<Path>>(stream: &mut FtpStream, dir: P, folder: String, del
             _ => ()
         }
     }
-    if delete{
+    if delete && folder != "./"{
         match fs::remove_dir(dir){
             Ok(()) => (),
             Err(_) => println!("Couldn't remove folder {}", dir.display())
