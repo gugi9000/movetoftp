@@ -101,15 +101,20 @@ fn main() {
     });
 }
 
+use std::fmt::Display;
+
+fn error(errors: &mut usize, action: &str, e: &Display){
+    println!("\tError {} file:\n\t\t{}", action, e);
+    *errors += 1;
+}
+
 use std::borrow::Cow;
 
 fn put_files(stream: &mut FtpStream, dir: PathBuf, folder: Cow<str>, errors: &mut usize, delete: bool){
     if folder != "./"{
         match stream.mkdir(&folder){
             Ok(_) => (),
-            Err(e) => {
-                println!("Error happened making remote folder ({}):\n\t{}", folder, e);
-            }
+            Err(e) => println!("Error happened making remote folder ({}):\n\t{}", folder, e)
         }
     }
     for entry in dir.read_dir().unwrap(){
@@ -126,20 +131,11 @@ fn put_files(stream: &mut FtpStream, dir: PathBuf, folder: Cow<str>, errors: &mu
                     Ok(ref mut f) => match stream.put(remote_file, f){
                         Ok(()) => match fs::remove_file(entry.path()){
                             Ok(()) => println!("\tSuccess deleting local file"),
-                            Err(e) => {
-                                println!("\tError deleting file:\n\t\t{}", e);
-                                *errors += 1;
-                            }
+                            Err(e) => error(errors, "deleting", &e)
                         },
-                        Err(e) => {
-                            println!("\tError putting file:\n\t\t{}", e);
-                            *errors += 1;
-                        }
+                        Err(e) => error(errors, "putting", &e)
                     },
-                    Err(e) => {
-                        println!("\tError opening file:\n\t\t{}", e);
-                        *errors += 1;
-                    }
+                    Err(e) => error(errors, "opening", &e)
                 }
             },
             t if t.is_dir() => put_files(stream, entry.path(), entry.file_name().to_string_lossy(), errors, delete),
