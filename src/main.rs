@@ -124,13 +124,11 @@ fn put_files(stream: &mut FtpStream, dir: PathBuf, folder: Cow<str>, errors: &mu
 
                 match File::open(file) {
                     Ok(ref mut f) => match stream.put(remote_file, f){
-                        Ok(()) => {
-                            match fs::remove_file(entry.path()){
-                                Ok(()) => println!("\tSuccess deleting local file"),
-                                Err(e) => {
-                                    println!("\tError deleting file:\n\t\t{}", e);
-                                    *errors += 1;
-                                }
+                        Ok(()) => match fs::remove_file(entry.path()){
+                            Ok(()) => println!("\tSuccess deleting local file"),
+                            Err(e) => {
+                                println!("\tError deleting file:\n\t\t{}", e);
+                                *errors += 1;
                             }
                         },
                         Err(e) => {
