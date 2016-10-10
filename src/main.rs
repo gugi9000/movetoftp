@@ -108,7 +108,7 @@ fn put_files(stream: &mut FtpStream, dir: PathBuf, folder: Cow<str>, errors: &mu
         match stream.mkdir(&folder){
             Ok(_) => (),
             Err(e) => {
-                println!("\tError happened making remote folder:\n\t{}", e);
+                println!("Error happened making remote folder ({}):\n\t{}", folder, e);
             }
         }
     }
@@ -128,18 +128,18 @@ fn put_files(stream: &mut FtpStream, dir: PathBuf, folder: Cow<str>, errors: &mu
                             match fs::remove_file(entry.path()){
                                 Ok(()) => println!("\tSuccess deleting local file"),
                                 Err(e) => {
-                                    println!("\tFailed deleting file: {:?}", e);
+                                    println!("\tError deleting file:\n\t\t{}", e);
                                     *errors += 1;
                                 }
                             }
                         },
                         Err(e) => {
-                            println!("\tError happened: {}", e);
+                            println!("\tError putting file:\n\t\t{}", e);
                             *errors += 1;
                         }
                     },
                     Err(e) => {
-                        println!("\tError opening file: {}", e);
+                        println!("\tError opening file:\n\t\t{}", e);
                         *errors += 1;
                     }
                 }
