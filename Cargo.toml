@@ -1,6 +1,6 @@
 [package]
 name = "move-to-ftp"
-version = "0.3.0"
+version = "0.3.2"
 authors = ["LFalch <lucas@wasd.dk>"]
 
 [dependencies]

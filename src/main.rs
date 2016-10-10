@@ -3,7 +3,7 @@ extern crate getopts;
 
 use std::env;
 use std::fs::{self, File};
-use std::path::Path;
+use std::path::PathBuf;
 
 use ftp::FtpStream;
 use ftp::types::FileType;
@@ -49,9 +49,17 @@ fn main() {
         return
     }
 
-    let local_path = matches.opt_str("f").unwrap_or_else(|| ".".to_owned());
+    let local_path = PathBuf::from(matches.opt_str("f").unwrap_or_else(|| ".".to_owned()));
     let hostname = required!(matches.opt_str("s"));
-    let port_number: u16 = matches.opt_str("p").map(|p| p.parse().unwrap()).unwrap_or(21);
+    let port_number: u16 = match matches.opt_str("p").ok_or(()){
+        // default port
+        Err(()) => 21,
+        Ok(p) => match p.parse(){
+            Ok(p) => p,
+            Err(e) => return
+                println!("Error parsing port as number:\n\t{}\nDid you type a real number?", e)
+        }
+    };
     let remote_path = matches.opt_str("t");
     let username = required!(matches.opt_str("u"));
     let password = required!(matches.opt_str("P"));
@@ -69,50 +77,79 @@ fn main() {
     };
     ftp_stream.transfer_type(FileType::Binary).unwrap();
     if let Some(ref p) = remote_path{
-        ftp_stream.cwd(p).unwrap();
+        match ftp_stream.cwd(p){
+            Ok(()) => (),
+            Err(e) => {
+                println!("Error happened setting the remote path:\n\t{}", e);
+                return
+            }
+        }
     }
 
-    put_files(&mut ftp_stream, local_path, "./".to_owned(), delete_folders);
+    let mut errors = 0;
+    put_files(&mut ftp_stream, local_path, "./".into(), &mut errors, delete_folders);
 
     ftp_stream.quit().unwrap();
 
-    println!("Finished!")
+    println!("Finished with {} error{}",
+    errors,
+    match errors{
+        // Smiley when there weren't any errors :)
+        0 => "s :)",
+        1 => "!",
+        _ => "s!"
+    });
 }
 
-fn put_files<P: AsRef<Path>>(stream: &mut FtpStream, dir: P, folder: String, delete: bool){
-    let dir = dir.as_ref();
+use std::borrow::Cow;
 
+fn put_files(stream: &mut FtpStream, dir: PathBuf, folder: Cow<str>, errors: &mut usize, delete: bool){
     if folder != "./"{
-        stream.mkdir(&folder).unwrap()
+        match stream.mkdir(&folder){
+            Ok(_) => (),
+            Err(e) => {
+                println!("\tError happened making remote folder:\n\t{}", e);
+            }
+        }
     }
-    for entry in fs::read_dir(dir).unwrap(){
+    for entry in dir.read_dir().unwrap(){
         let entry = entry.unwrap();
 
         match entry.file_type().unwrap(){
             t if t.is_file() => {
-                let remote_file = &format!("{}/{}", folder, entry.path().file_name().unwrap().to_str().unwrap());
+                let remote_file = &format!("{}/{}", folder, entry.file_name().to_string_lossy());
                 let file = entry.path();
 
                 println!("Uploading {} to {}", file.display(), remote_file);
 
-                match stream.put(remote_file, &mut File::open(file).unwrap()){
-                    Ok(()) => {
-                        match fs::remove_file(entry.path()){
-                            Ok(()) => println!("\tSuccess deleting local file"),
-                            Err(e) => println!("\tFailed deleting file: {:?}", e)
+                match File::open(file) {
+                    Ok(ref mut f) => match stream.put(remote_file, f){
+                        Ok(()) => {
+                            match fs::remove_file(entry.path()){
+                                Ok(()) => println!("\tSuccess deleting local file"),
+                                Err(e) => {
+                                    println!("\tFailed deleting file: {:?}", e);
+                                    *errors += 1;
+                                }
+                            }
+                        },
+                        Err(e) => {
+                            println!("\tError happened: {}", e);
+                            *errors += 1;
                         }
                     },
                     Err(e) => {
-                        println!("\tError happened: {}", e);
+                        println!("\tError opening file: {}", e);
+                        *errors += 1;
                     }
                 }
             },
-            t if t.is_dir() => put_files(stream, entry.path(), entry.path().file_name().unwrap().to_string_lossy().into_owned(), delete),
+            t if t.is_dir() => put_files(stream, entry.path(), entry.file_name().to_string_lossy(), errors, delete),
             _ => ()
         }
     }
     if delete && folder != "./"{
-        match fs::remove_dir(dir){
+        match fs::remove_dir(&dir){
             Ok(()) => (),
             Err(_) => println!("Couldn't remove folder {}", dir.display())
         }
