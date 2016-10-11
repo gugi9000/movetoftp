@@ -1,5 +1,5 @@
 [root]
-name = "move-to-ftp"
+name = "movetoftp"
 version = "0.3.2"
 dependencies = [
  "ftp 2.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
