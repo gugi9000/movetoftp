@@ -38,7 +38,7 @@ fn main() {
                 .takes_value(true)
                 .value_name("PORT")
                 .default_value("21")
-                .help("The hostname of the FTP-server"),
+                .help("The port of the FTP-server"),
             Arg::with_name("to")
                  .short("t")
                  .long("to")
@@ -62,7 +62,7 @@ fn main() {
             Arg::with_name("delete")
                  .short("d")
                  .long("delete")
-                 .help("Deletes emptied folders after moving files"),
+                 .help("Also deletes emptied folders after moving files"),
         ])
         .get_matches();
 

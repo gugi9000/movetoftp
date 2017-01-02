@@ -1,6 +1,6 @@
 [root]
 name = "movetoftp"
-version = "0.3.2"
+version = "0.3.3"
 dependencies = [
  "clap 2.19.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "ftp 2.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
