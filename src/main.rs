@@ -44,7 +44,6 @@ fn main() {
                  .long("to")
                  .takes_value(true)
                  .value_name("PATH")
-                 .required(true)
                  .help("The remote path on FTP-server where the files will be moved to"),
             Arg::with_name("username")
                  .short("u")
