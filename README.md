@@ -3,10 +3,10 @@
 A tool to upload local files to FTP and **delete them**, locally. Hence move to FTP :smile:
 
 ### Usage
-    movetoftp.exe [FLAGS] [OPTIONS] --server <HOST> --to <PATH> --username <USERNAME> --password <PASSWORD>
+    movetoftp.exe [FLAGS] [OPTIONS] --server <HOST> --username <USERNAME> --password <PASSWORD>
 
 #### Example
-    movetoftp.exe -f C:\Temp\foo\ -s ftp.example.com -p 21 -t /pub/dropbox/ -u joe -P mySecret -d
+    movetoftp.exe -f C:\Temp\foo\ -s ftp.example.com -t /pub/dropbox/ -u joe -P mySecret -d
 
 ### Flags
     -d, --delete     Deletes emptied folders after moving files
