@@ -1,8 +1,9 @@
 [package]
 name = "movetoftp"
-version = "0.3.2"
+version = "0.3.3"
 authors = ["LFalch <lucas@wasd.dk>"]
+description = "Program for quickly moving files from a folder to an FTP-server"
 
 [dependencies]
 ftp = "2.0.0"
-getopts = "0.2"
+clap = "2.19.3"

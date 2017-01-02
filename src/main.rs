@@ -1,69 +1,78 @@
 extern crate ftp;
-extern crate getopts;
+#[macro_use]
+extern crate clap;
 
-use std::env;
 use std::fs::{self, File};
 use std::path::PathBuf;
 
 use ftp::FtpStream;
 use ftp::types::FileType;
 
-use getopts::Options;
+use clap::{App, Arg, AppSettings};
 
-macro_rules! required {
-    ($opt:expr) => (
-        if let Some(x) = $opt{
-            x
-        }else{
-            println!("A required arguement was missing!");
-            return incorrect_syntax()
-        }
-    );
-}
-
-fn incorrect_syntax(){
-    println!("Incorrect syntax.\nTry -h for help");
-}
 fn main() {
-    let args: Vec<_> = env::args().skip(1).collect();
+     let m = App::new(env!("CARGO_PKG_NAME"))
+        .author(crate_authors!())
+        .version(crate_version!())
+        .about(env!("CARGO_PKG_DESCRIPTION"))
+        .setting(AppSettings::ColoredHelp)
+        .args(&[
+            Arg::with_name("from")
+                 .help("The path to the local folder where the files will be moved from")
+                 .short("f")
+                 .long("from")
+                 .takes_value(true)
+                 .value_name("PATH")
+                 .default_value("."),
+            Arg::with_name("server")
+                .short("s")
+                .long("server")
+                .takes_value(true)
+                .value_name("HOST")
+                .required(true)
+                .help("The hostname of the FTP-server"),
+            Arg::with_name("port")
+                .short("p")
+                .validator(|p| p.parse::<u16>().map(|_| ()).map_err(|_| "Not a valid port".to_owned()))
+                .long("port")
+                .takes_value(true)
+                .value_name("PORT")
+                .default_value("21")
+                .help("The port of the FTP-server"),
+            Arg::with_name("to")
+                 .short("t")
+                 .long("to")
+                 .takes_value(true)
+                 .value_name("PATH")
+                 .help("The remote path on FTP-server where the files will be moved to"),
+            Arg::with_name("username")
+                 .short("u")
+                 .long("username")
+                 .takes_value(true)
+                 .value_name("USERNAME")
+                 .required(true)
+                 .help("The username of the user on the FTP-server to login with"),
+            Arg::with_name("password")
+                 .short("P")
+                 .long("password")
+                 .takes_value(true)
+                 .value_name("PASSWORD")
+                 .required(true)
+                 .help("The password of the user on the FTP-server to login with"),
+            Arg::with_name("delete")
+                 .short("d")
+                 .long("delete")
+                 .help("Also deletes emptied folders after moving files"),
+        ])
+        .get_matches();
 
-    println!("Move to FTP v{} © 2016 LFalch.com\n", env!("CARGO_PKG_VERSION"));
-
-    let mut opts = Options::new();
-    opts.optopt("f", "from", "set the path to the local folder where the files will be moved from (default is current working directory)", "PATH");
-    opts.optopt("s", "server", "set the hostname of the FTP-server (required)", "HOST");
-    opts.optopt("p", "port", "set the port on the FTP-server (default: 21)", "PORT");
-    opts.optopt("t", "to", "set the remote path on the FTP-server where the files will be moved to", "PATH");
-    opts.optopt("u", "username", "set the username of the user on the FTP-server to login with (required)", "USERNAME");
-    opts.optopt("P", "password", "set the password of the user on the FTP-server to login with (required)", "PASSWORD");
-    opts.optflag("d", "delete", "deletes emptied folders after moving files");
-    opts.optflag("h", "help", "prints this help");
-
-    let matches = match opts.parse(&args){
-        Ok(m) => m,
-        Err(_) => return incorrect_syntax()
-    };
-
-    if matches.opt_present("h") {
-        println!("{}", opts.usage(""));
-        return
-    }
-
-    let local_path = PathBuf::from(matches.opt_str("f").unwrap_or_else(|| ".".to_owned()));
-    let hostname = required!(matches.opt_str("s"));
-    let port_number: u16 = match matches.opt_str("p").ok_or(()){
-        // default port
-        Err(()) => 21,
-        Ok(p) => match p.parse(){
-            Ok(p) => p,
-            Err(e) => return
-                println!("Error parsing port as number:\n\t{}\nDid you type a real number?", e)
-        }
-    };
-    let remote_path = matches.opt_str("t");
-    let username = required!(matches.opt_str("u"));
-    let password = required!(matches.opt_str("P"));
-    let delete_folders = matches.opt_present("d");
+    let local_path = m.value_of("from").unwrap().into();
+    let hostname = m.value_of("server").unwrap();
+    let port_number: u16 = m.value_of("port").and_then(|s| s.parse().ok()).unwrap();
+    let remote_path = m.value_of("to");
+    let username = m.value_of("username").unwrap();
+    let password = m.value_of("password").unwrap();
+    let delete_folders = m.is_present("delete");
 
     println!("Connecting..");
 
